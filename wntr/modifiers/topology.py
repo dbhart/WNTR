@@ -13,7 +13,27 @@ class PipeClosures(_mods.NetworkModifier):
     """Close some subset of pipes within the network.
 
     Close pipes based on a list, a stochastic subset of a list, or stochastic subset
-    of all pipes. A maximum diameter can also be specified.
+    of all pipes. A minumum and/or maximum diameter of pipe to be closed can also be
+    specified.
+
+    Parameters
+    ----------
+    pipe_list : list
+        A list of pipe labels to limit the possible pipes that can be closed.
+    stochastic_fraction : float
+        A threshold value for a random variable :math:`X \sim U(0,1)` where a pipe is
+        closed if :math:`X` is less than the threshold.
+        If this value is False or 0.0, then all otherwise selected pipes will be closed.
+    min_diameter : float
+        A minimum diameter for pipes that can be closed.
+    max_diameter : float
+        A maximum diameter for pipes that can be closed.
+
+
+    .. warning::
+
+        If no values are provided at all, every pipe in the system would be closed.
+
 
     """
     def __init__(self, pipe_list=None, stochastic_fraction=False,

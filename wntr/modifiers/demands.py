@@ -78,7 +78,6 @@ class UniquePatterns(_mods.NetworkModifier):
         if self._rep_pats:
             self._make_patterns_same_length(wnm)
 
-
     def _convert_to_per_node_patterns(self, wnm):
         """
         Convert from general patterns to per-node patterns.
@@ -110,11 +109,6 @@ class UniquePatterns(_mods.NetworkModifier):
         with simple pattern `[ 3, 8, 1, 9]` would become
         `[3, 3, 8, 8, 1, 1, 9, 9]`.
 
-        Parameters
-        ----------
-        network : wntr.network.WaterNetworkModel
-            The water network model created from an EPANET-2 .inp file.
-
         """
         pat_ts = wnm.options.pattern_timestep
         hyd_ts = dt
@@ -143,3 +137,14 @@ class UniquePatterns(_mods.NetworkModifier):
                 new_pat_values[i] = vals[i%n_pat_step]
             wnm.add_pattern(name, new_pat_values)
         _logger.info("Total pattern steps now %d",num_steps)
+
+
+class AdjustDemandsGauss(_mods.NetworkModifier):
+    def __init__(self, **kwargs):
+        raise NotImplementedError()
+
+
+class AdjustDemandsCorrel(_mods.NetworkModifier):
+    def __init__(self, **kwargs):
+        raise NotImplementedError()
+
