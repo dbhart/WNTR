@@ -1,5 +1,5 @@
 wntr.network.model module
-=====================================
+=========================
 
 .. automodule:: wntr.network.model
     :members:

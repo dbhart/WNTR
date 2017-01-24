@@ -1,5 +1,5 @@
 wntr.utils.color module
-========================
+=======================
 
 .. automodule:: wntr.utils.color
     :members:

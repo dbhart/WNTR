@@ -1,5 +1,5 @@
 wntr.sim.solvers module
-============================
+=======================
 
 .. automodule:: wntr.sim.solvers
     :members:

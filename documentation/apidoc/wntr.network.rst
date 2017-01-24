@@ -12,6 +12,6 @@ Submodules
 .. toctree::
 
    wntr.network.controls
-   wntr.network.model
    wntr.network.graph
+   wntr.network.model
 

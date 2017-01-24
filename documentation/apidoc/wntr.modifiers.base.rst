@@ -1,7 +1,7 @@
-wntr.sim.hydraulics module
+wntr.modifiers.base module
 ==========================
 
-.. automodule:: wntr.sim.hydraulics
+.. automodule:: wntr.modifiers.base
     :members:
     :no-undoc-members:
     :show-inheritance:

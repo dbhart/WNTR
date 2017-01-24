@@ -1,5 +1,5 @@
 wntr.sim.results module
-==============================
+=======================
 
 .. automodule:: wntr.sim.results
     :members:

@@ -1,5 +1,5 @@
 wntr.network.graph module
-====================================
+=========================
 
 .. automodule:: wntr.network.graph
     :members:

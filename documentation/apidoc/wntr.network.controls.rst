@@ -1,5 +1,5 @@
 wntr.network.controls module
-===================================
+============================
 
 .. automodule:: wntr.network.controls
     :members:
