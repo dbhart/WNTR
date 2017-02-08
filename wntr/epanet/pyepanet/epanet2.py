@@ -76,7 +76,8 @@ class ENepanet():
     
     fileLoaded = False
 
-    def __init__(self, inpfile='', rptfile='', binfile=''):
+    def __init__(self, inpfile='', rptfile='tmp.rpt', binfile=''):
+        """Initialize the ENepanet class"""
 
         self.inpfile = inpfile
         self.rptfile = rptfile

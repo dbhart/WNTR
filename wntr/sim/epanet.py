@@ -2,17 +2,152 @@ from wntr.sim.core import WaterNetworkSimulator, NetResults
 import time
 import pandas as pd
 import numpy as np
+import wntr.epanet.io
 from wntr.epanet.util import FlowUnits, MassUnits, HydParam, QualParam, EN, to_si, from_si
 import logging
-
+import time
 logger = logging.getLogger(__name__)
+from wntr.sim.results import NetResults
+import os
+
+
+
+class FastEpanetSim(WaterNetworkSimulator):
+    """
+    Fast EPANET simulator class.
+
+    Use the EPANET DLL to run an INP file as-is, and read the results from the
+    binary output file. Multiple water quality simulations are still possible
+    using the WQ keyword in the run_sim function. Hydraulics will be stored and
+    saved to a file. This file will not be deleted by default, nor will any
+    binary files be deleted.
+
+    The reason this is considered a "fast" simulator is due to the fact that there
+    is no looping within Python. The "ENsolveH" and "ENsolveQ" toolkit
+    functions are used instead.
+
+    Parameters
+    ----------
+    wn : WaterNetworkModel
+        Water network model
+    reader : wntr.epanet.io.BinFile derived object
+        Defaults to None, which will create a new wntr.epanet.io.BinFile object with
+        the results_types specified as an init option. Otherwise, a fully
+    result_types : dict
+        Defaults to None, or all results. Otherwise, is a keyword dictionary to pass to
+        the reader to specify what results should be saved.
+
+
+    .. seealso::
+
+        wntr.epanet.io.BinFile
+
+    """
+    def __init__(self, wn, reader=None, result_types=None):
+        WaterNetworkSimulator.__init__(self, wn)
+        self.reader = reader
+        self.prep_time_before_main_loop = 0.0
+        if self.reader is None:
+            self.reader = wntr.epanet.io.BinFile(result_types=result_types)
+
+    def run_sim(self, WQ=None, convert_units=True, file_prefix='temp'):
+        inpfile = file_prefix + '.inp'
+        self._wn.write_inpfile(inpfile)
+        enData = wntr.epanet.pyepanet.ENepanet()
+        rptfile = file_prefix + '.rpt'
+        outfile = file_prefix + '.bin'
+        hydfile = file_prefix + '.hyd'
+        enData.ENopen(inpfile, rptfile, outfile)
+        #os.sys.stderr.write('Opened EPANET\n')
+        flowunits = FlowUnits(enData.ENgetflowunits())
+        if self._wn._inpfile is not None:
+            mass_units = self._wn._inpfile.mass_units
+        else:
+            mass_units = MassUnits.mg
+        enData.ENsolveH()
+        enData.ENsavehydfile(hydfile)
+        #os.sys.stderr.write('Finished Hydraulics\n')
+        if WQ:
+            if not isinstance(WQ,list):
+                qlist = [WQ]
+            else:
+                qlist = WQ
+            for WQ in qlist:
+                if WQ.quality_type == 'CHEM':
+
+                    # Set quality type and convert source qual
+                    if WQ.source_type == 'MASS':
+                        enData.ENsetqualtype(EN.CHEM, 'Chemical', 'mg/min', '')
+                        wq_sourceQual = from_si(flowunits, WQ.source_quality,
+                                                QualParam.SourceMassInject,
+                                                mass_units=mass_units)
+                        wq_sourceQual = WQ.source_quality*60*1e6 # kg/s to mg/min
+                    else:
+                        enData.ENsetqualtype(EN.CHEM, 'Chemical', 'mg/L', '')
+                        wq_sourceQual = from_si(flowunits, WQ.source_quality,
+                                                QualParam.Concentration,
+                                                mass_units=mass_units)
+                    # Set source quality
+                    for node in WQ.nodes:
+                        nodeid = enData.ENgetnodeindex(node)
+                        enData.ENsetnodevalue(nodeid, EN.SOURCEQUAL, wq_sourceQual)
+
+                    # Set source type
+                    if WQ.source_type == 'CONCEN':
+                        wq_sourceType = EN.CONCEN
+                    elif WQ.source_type == 'MASS':
+                        wq_sourceType = EN.MASS
+                    elif WQ.source_type == 'FLOWPACED':
+                        wq_sourceType = EN.FLOWPACED
+                    elif WQ.source_type == 'SETPOINT':
+                        wq_sourceType = EN.SETPOINT
+                    else:
+                        logger.error('Invalid Source Type for CHEM scenario')
+                    enData.ENsetnodevalue(nodeid, EN.SOURCETYPE, wq_sourceType)
+
+                    # Set pattern
+                    if WQ.end_time == -1:
+                        WQ.end_time = enData.ENgettimeparam(EN.DURATION)
+                    if WQ.start_time > WQ.end_time:
+                        raise RuntimeError('Start time is greater than end time')
+                    patternstep = enData.ENgettimeparam(EN.PATTERNSTEP)
+                    duration = enData.ENgettimeparam(EN.DURATION)
+                    patternlen = int(duration/patternstep)
+                    patternstart = int(WQ.start_time/patternstep)
+                    patternend = int(WQ.end_time/patternstep)
+                    pattern = [0]*patternlen
+                    pattern[patternstart:patternend] = [1]*(patternend-patternstart)
+                    enData.ENaddpattern('wq')
+                    patternid = enData.ENgetpatternindex('wq')
+                    enData.ENsetpattern(patternid, pattern)
+                    enData.ENsetnodevalue(nodeid, EN.SOURCEPAT, patternid)
+
+                elif WQ.quality_type == 'AGE':
+                    # Set quality type
+                    enData.ENsetqualtype(EN.AGE,0,0,0)
+
+                elif WQ.quality_type == 'TRACE':
+                    # Set quality type
+                    for node in WQ.nodes:
+                        enData.ENsetqualtype(EN.TRACE,0,0,node.encode('ascii'))
+                else:
+                    logger.error('Invalid Quality Type')
+            enData.ENsolveQ()
+            #os.sys.stderr.write('Finished Quality\n')
+        try:
+            enData.ENreport()
+        except:
+            pass
+        enData.ENclose()
+        #os.sys.stderr.write('Finished Closing\n')
+        return self.reader.read(outfile)
 
 
 class EpanetSimulator(WaterNetworkSimulator):
     """
     EPANET simulator class.
     The EPANET simulator uses the EPANET toolkit and dll.
-    
+
     Parameters
     ----------
     wn : WaterNetworkModel object
@@ -20,7 +155,6 @@ class EpanetSimulator(WaterNetworkSimulator):
     """
 
     def __init__(self, wn):
-        
         WaterNetworkSimulator.__init__(self, wn)
 
         # Timing
@@ -40,14 +174,14 @@ class EpanetSimulator(WaterNetworkSimulator):
 
         convert_units : bool (optional)
             Convert results to SI units, default = True
-            
+
         file_prefix : string (optional)
             INP and RPT file prefix, default = 'tmp'
         """
         # Write a new inp file from the water network model
         #self._wn.write_inpfile(file_prefix + '.inp')
         #self._wn.name = file_prefix + '.inp'
-        
+
         start_run_sim_time = time.time()
         logger.debug('Starting run')
         # Create enData
@@ -61,7 +195,7 @@ class EpanetSimulator(WaterNetworkSimulator):
             mass_units = MassUnits.mg
 
         enData.ENopenH()
-        enData.ENinitH(1)
+        enData.ENinitH(11)
 
         # Create results object and load general simulation options.
         results = NetResults()
@@ -204,7 +338,7 @@ class EpanetSimulator(WaterNetworkSimulator):
                 else:
                     logger.error('Invalid Quality Type')
             enData.ENopenQ()
-            enData.ENinitQ(int(binary_file))
+            enData.ENinitQ(0)
 
             while True:
                 t = enData.ENrunQ()
@@ -233,7 +367,6 @@ class EpanetSimulator(WaterNetworkSimulator):
         except:
             pass
         # close epanet
-        # this is causing a segmentation fault on linux if a binary file is ever read, like ever
         enData.ENclose()
 
         # Create Panel

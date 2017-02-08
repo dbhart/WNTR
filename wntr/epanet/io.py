@@ -8,6 +8,10 @@ import wntr.sim
 #from wntr.sim import NetResults
 import wntr
 import io
+from os import remove
+import os
+import sys
+from shutil import copy
 
 from .util import FlowUnits, MassUnits, HydParam, QualParam, ResultType
 from .util import LinkBaseStatus, to_si, from_si
@@ -1313,7 +1317,10 @@ class BinFile(object):
 
     """
     def __init__(self, result_types=None, network=False, energy=False, statistics=False):
-        self.ftype = '=f4'
+        if os.name in ['nt', 'dos'] or sys.platform in ['darwin']:
+            self.ftype = '=f4'
+        else:
+            self.ftype = '=f8'
         self.idlen = 32
         self.hydraulic_id = None
         self.quality_id = None
@@ -1388,7 +1395,10 @@ class BinFile(object):
 
         """
         if result_type in [ResultType.quality, ResultType.linkquality]:
-            values = QualParam.Concentration._to_si(self.flow_units, values, mass_units=self.mass_units)
+            if self.quality_type is QualType.Chem:
+                values = QualParam.Concentration._to_si(self.flow_units, values, mass_units=self.mass_units)
+            elif self.quality_type is QualType.Age:
+                values = QualParam.WaterAge._to_si(self.flow_units, values)
         elif result_type == ResultType.demand:
             values = HydParam.Demand._to_si(self.flow_units, values)
         elif result_type == ResultType.flowrate:
@@ -1479,7 +1489,8 @@ class BinFile(object):
 
         """
         logger.debug('Read binary EPANET data from %s',filename)
-        with open(filename,'rb') as fin:
+        copy(filename, filename+'.tmp')
+        with open(filename+'.tmp','rb') as fin:
             ftype = self.ftype
             idlen = self.idlen
             logger.debug('... read prolog information ...')
@@ -1552,8 +1563,6 @@ class BinFile(object):
             elevation = np.fromfile(fin, dtype=np.dtype(ftype), count=nnodes)
             linklen = np.fromfile(fin, dtype=np.dtype(ftype), count=nlinks)
             diameter = np.fromfile(fin, dtype=np.dtype(ftype), count=nlinks)
-            print(nodenames)
-            print(linknames)
             self.save_network_desc_line('link_start', linkstart)
             self.save_network_desc_line('link_end', linkend)
             self.save_network_desc_line('link_type', linktype)
@@ -1626,4 +1635,5 @@ class BinFile(object):
             if warnflag != 0:
                 logger.warning('Warnings were issued during simulation')
         self.finalize_save(magic1==magic2, warnflag)
+        remove(filename+'.tmp')
         return self.results
