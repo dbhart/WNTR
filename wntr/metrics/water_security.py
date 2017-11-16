@@ -8,50 +8,50 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def mass_contaminant_consumed(node_results):
+def mass_contaminant_consumed(node_quality, node_demand):
     """ Mass of contaminant consumed, equation from [1].
     
     Parameters
     ----------
-    node_results : pd.Panel
-        A pandas Panel containing node results. 
-        Items axis = attributes, Major axis = times, Minor axis = node names
-        Mass of contaminant consumed uses 'demand' and quality' attrbutes.
+    node_quality : pd.DataFrame
+        A pandas Panel containing quality values, indexed by time and columns as node names
+    node_demand : pd.DataFrame
+        A pandas Panel containing demands values, indexed by time and columns as node names
+
     
-     References
+    References
     ----------
     [1] EPA, U. S. (2015). Water security toolkit user manual version 1.3. 
     Technical report, U.S. Environmental Protection Agency
     """
-    maskD = np.greater(node_results['demand'], 0) # positive demand
-    deltaT = node_results['quality'].index[1] # this assumes constant timedelta
-    MC = node_results['demand']*deltaT*node_results['quality']*maskD # m3/s * s * kg/m3 - > kg
-    
+    maskD = np.greater(node_demand, 0) # positive demand
+    deltaT = node_quality.index[1] # this assumes constant timedelta
+    MC = node_demand*deltaT*node_quality*maskD # m3/s * s * kg/m3 - > kg
     return MC
      
-def volume_contaminant_consumed(node_results, detection_limit):
+
+def volume_contaminant_consumed(node_quality, node_demand, detection_limit):
     """ Volume of contaminant consumed, equation from [1].
     
     Parameters
     ----------
-    node_results : pd.Panel
-        A pandas Panel containing node results. 
-        Items axis = attributes, Major axis = times, Minor axis = node names
-        Volume of contaminant consumed uses 'demand' and quality' attrbutes.
-    
+    node_quality : pd.DataFrame
+        A pandas Panel containing quality values, indexed by time and columns as node names
+    node_demand : pd.DataFrame
+        A pandas Panel containing demands values, indexed by time and columns as node names
     detection_limit : float
         Contaminant detection limit
     
-     References
+    
+    References
     ----------
     [1] EPA, U. S. (2015). Water security toolkit user manual version 1.3. 
     Technical report, U.S. Environmental Protection Agency
     """
-    maskQ = np.greater(node_results['quality'], detection_limit)
-    maskD = np.greater(node_results['demand'], 0) # positive demand
-    deltaT = node_results['quality'].index[1] # this assumes constant timedelta
-    VC = node_results['demand']*deltaT*maskQ*maskD # m3/s * s * bool - > m3
-    
+    maskQ = np.greater(node_quality, detection_limit)
+    maskD = np.greater(node_demand, 0) # positive demand
+    deltaT = node_quality.index[1] # this assumes constant timedelta
+    VC = node_demand*deltaT*maskQ*maskD # m3/s * s * bool - > m3
     return VC
     
 
@@ -98,11 +98,17 @@ def extent_contamination_indirect(node_quality, flow_rate,
     Parameters
     ----------
     node_quality : pandas.DataFrame
+        The quality for each node/time, used to determine node contamination status
     flow_rate : pandas.DataFrame
-    link_length : pandas.Series
+        The flow rate for each link/time, used to determine pipe contamination status
     link_names : pandas.Series
+        The name (str) for each of the links
     link_start_node : pandas.Series
+        The start node name (str) for each link, indexed by link_names
     link_end_node : pandas.Series
+        The end node name (str) for each link, indexed by link_names
+    link_length : pandas.Series
+        The length of the pipes (float), must be indexed by link_names
     detection_limit : float
         the concentration at which water is considered contaminated
 
@@ -118,18 +124,11 @@ def extent_contamination_indirect(node_quality, flow_rate,
     [1] EPA, U. S. (2015). Water security toolkit user manual version 1.3. 
     Technical report, U.S. Environmental Protection Agency
     """
-#    if not isinstance(results, NetResults):
-#        raise ValueError('results must be a NetResults object')
-#    flow_dir = np.sign(results.link['flowrate'].loc[:,results.meta['link_names']])
-#    node_contam = results.node['quality'] > detection_limit
-#    pos_flow = np.array(node_contam.loc[:,results.meta['link_start']])
-#    neg_flow = np.array(node_contam.loc[:,results.meta['link_end']])
     flow_dir = np.sign(flow_rate.loc[:,link_names])
     node_contam = node_quality > detection_limit
     pos_flow = np.array(node_contam.loc[:,link_start_node])
     neg_flow = np.array(node_contam.loc[:,link_end_node])
     link_contam = ((flow_dir>0)&pos_flow) | ((flow_dir<0)&neg_flow)
-#    contam_len = (link_contam * results.meta['link_length']).cummax()
     contam_len = (link_contam * link_length).cummax()
     ec = contam_len.sum(axis=1)
     return ec
@@ -184,10 +183,6 @@ def extent_contamination_direct(link_quality, link_length, detection_limit=0.0):
     [1] EPA, U. S. (2015). Water security toolkit user manual version 1.3. 
     Technical report, U.S. Environmental Protection Agency
     """
-#    if not isinstance(results, NetResults):
-#        raise ValueError('results must be a NetResults object')
-#    link_contam = results.link['linkquality'] > detection_limit
-#    contam_len = (link_contam * results.meta['link_length']).cummax()
     link_contam = link_quality > detection_limit
     contam_len = (link_contam * link_length).cummax()
     ec = contam_len.sum(axis=1)
