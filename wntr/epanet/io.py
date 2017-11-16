@@ -2304,8 +2304,7 @@ class BinFile(object):
             the values that go with the information
 
         """
-        #print('    Network: {} = {}'.format(element, values))
-        pass
+        self.results.meta[element] = values
 
     def save_energy_line(self, pump_idx, pump_name, values):
         """Save pump energy from the output file.
@@ -2430,8 +2429,8 @@ class BinFile(object):
             linknames = np.array(np.fromfile(fin, dtype=dt_str, count=nlinks), dtype=str).tolist()
             self.node_names = nodenames
             self.link_names = linknames
-            linkstart = np.fromfile(fin, dtype=np.int32, count=nlinks)
-            linkend = np.fromfile(fin, dtype=np.int32, count=nlinks)
+            linkstart = np.array(np.fromfile(fin, dtype=np.int32, count=nlinks), dtype=int)
+            linkend = np.array(np.fromfile(fin, dtype=np.int32, count=nlinks), dtype=int)
             linktype = np.fromfile(fin, dtype=np.int32, count=nlinks)
             tankidxs = np.fromfile(fin, dtype=np.int32, count=ntanks)
             tankarea = np.fromfile(fin, dtype=np.dtype(ftype), count=ntanks)
@@ -2478,19 +2477,19 @@ class BinFile(object):
                 self.results.meta['quality_units'] = wqunits
                 self.results.meta['quality_chem'] = chemical
             self.results.time = reporttimes
-            self.results.meta['report_times'] = reporttimes
-            self.results.meta['node_elevation'] = pd.Series(data=elevation, index=nodenames)
-            self.results.meta['link_length'] = pd.Series(data=linklen, index=linknames)
-            self.results.meta['link_diameter'] = pd.Series(data=diameter, index=linknames)
-            self.results.meta['stats_mode'] = statsflag
-            self.results.meta['stats_N'] = statsN
+            self.save_network_desc_line('report_times', reporttimes)
+            self.save_network_desc_line('node_elevation', pd.Series(data=elevation, index=nodenames))
+            self.save_network_desc_line('link_length', pd.Series(data=linklen, index=linknames))
+            self.save_network_desc_line('link_diameter', pd.Series(data=diameter, index=linknames))
+            self.save_network_desc_line('stats_mode', statsflag)
+            self.save_network_desc_line('stats_N', statsN)
             nodetypes = np.array(['Junction']*self.num_nodes, dtype='|S10')
             nodetypes[tankidxs-1] = 'Tank'
             nodetypes[tankidxs[tankarea==0]-1] = 'Reservoir'
             linktypes = np.array(['Pipe']*self.num_links)
             linktypes[ linktype == EN.PUMP ] = 'Pump'
             linktypes[ linktype > EN.PUMP ] = 'Valve'
-            self.results.meta['link_type'] = pd.Series(data=linktypes, index=linknames, copy=True)
+            self.save_network_desc_line('link_type', pd.Series(data=linktypes, index=linknames, copy=True))
             linktypes[ linktype == EN.CVPIPE ] = 'CV'
             linktypes[ linktype == EN.FCV ] = 'FCV'
             linktypes[ linktype == EN.PRV ] = 'PRV'
@@ -2498,10 +2497,13 @@ class BinFile(object):
             linktypes[ linktype == EN.PBV ] = 'PBV'
             linktypes[ linktype == EN.TCV ] = 'TCV'
             linktypes[ linktype == EN.GPV ] = 'GPV'
-            self.results.meta['link_subtype'] = pd.Series(data=linktypes, index=linknames, copy=True)
-            self.results.meta['node_type'] = pd.Series(data=nodetypes, index=nodenames, copy=True)
-            self.results.meta['node_names'] = nodenames
-            self.results.meta['link_names'] = linknames
+            self.save_network_desc_line('link_subtype', pd.Series(data=linktypes, index=linknames, copy=True))
+            self.save_network_desc_line('node_type', pd.Series(data=nodetypes, index=nodenames, copy=True))
+            self.save_network_desc_line('node_names', np.array(nodenames, dtype=str))
+            self.save_network_desc_line('link_names', np.array(linknames, dtype=str))
+            names = np.array(nodenames, dtype=str)
+            self.save_network_desc_line('link_start', pd.Series(data=names[linkstart-1], index=linknames, copy=True))
+            self.save_network_desc_line('link_end', pd.Series(data=names[linkend-1], index=linknames, copy=True))
 
             if custom_handlers is True:
                 logger.debug('... set up results object ...')

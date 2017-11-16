@@ -65,7 +65,10 @@ def test_mass_consumed():
     assert_less(error, 0.01) # 1% error
 
 def test_volume_consumed():
-    raise SkipTest
+    """
+    TODO: Volume consumed - get better (more accurate) numbers from the WST simulations and make sure
+    the time settings were the same
+    """
 
     inp_file = join(net3dir,'Net3.inp')
 
@@ -88,18 +91,24 @@ def test_volume_consumed():
     VC_cumsum = VC_timeseries.cumsum()
     #VC_timeseries.to_csv('VC.txt')
 
-    expected = float(156760/35.3147) # hour 2
+    expected = float(156760/264.172) # hour 2
     error = abs((VC_cumsum[2*3600] - expected)/expected)
     print(VC_cumsum[2*3600], expected, error)
-    assert_less(error, 0.01) # 1% error
+    assert_less(error, 0.02) # 1% error
 
-    expected = float(4867920/35.3147) # hour 12
+    expected = float(4867920/264.172) # hour 12
     error = abs((VC_cumsum[12*3600] - expected)/expected)
     print(VC_cumsum[12*3600], expected, error)
-    assert_less(error, 0.01) # 1% error
+    assert_less(error, 0.02) # 1% error
 
 def test_extent_contaminated():
-    raise SkipTest
+    """Test the extent of contamination metrics.
+    
+    Compare extent_contamination_indirect against WST results.
+    Compare extent_contamination_direct against indirect results for overall matching.
+    Methods will not be exact matches at all timesteps as they use different methods.
+    
+    """
 
     inp_file = join(net3dir,'Net3.inp')
 
@@ -109,28 +118,27 @@ def test_extent_contaminated():
     newpat = wntr.network.elements.Pattern.BinaryPattern('NewPattern', 0, 24*3600, wn.options.time.pattern_timestep, wn.options.time.duration)
     wn.add_pattern(newpat.name, newpat)
     wn.add_source('Source1', '121', 'SETPOINT', 100, 'NewPattern')
-    #WQ = wntr.scenario.Waterquality('CHEM', ['121'], 'SETPOINT', 100, 0, 24*3600)
-
     sim = wntr.sim.EpanetSimulator(wn)
     results = sim.run_sim()
 
-    #junctions = [junction_name for junction_name, junction in wn.junctions]
-    #node_results = results.node.loc[:, :, junctions]
 
-    EC = wntr.metrics.extent_contaminant(results.node, results.link, wn, 0)
-    EC_timeseries = EC.sum(axis=1)
-    EC_cummax = EC_timeseries.cummax()
-    #EC_timeseries.to_csv('EC.txt')
+    fun = wntr.metrics.water_security.extent_contamination_indirect
+    ECi = fun(results.node['quality'], results.link['flowrate'], results.meta['link_names'],
+             results.meta['link_start'], results.meta['link_end'], results.meta['link_length'],
+             detection_limit=0)
+    expected = float(80749.9) # hour 2
+    errori2 = abs((ECi[2*3600] - expected)/expected)
+    assert_less(errori2, 0.001) # 0.1% error
+    expected = float(135554.0) # hour 12
+    errori12 = abs((ECi[12*3600] - expected)/expected)
+    assert_less(errori12, 0.001) # 0.1% error
 
-    expected = float(80749.9*0.3048) # hour 2
-    error = abs((EC_cummax[2*3600] - expected)/expected)
-    # print(EC_cummax[2*3600], expected, error)
-    assert_less(error, 0.01) # 1% error
+    # Check direct method for similar results to indirect (WST/TEVASIM) method
+    fun = wntr.metrics.water_security.extent_contamination_direct
+    ECd = fun(results.link['linkquality'], results.meta['link_length'], detection_limit=0)
+    assert_less(sum(abs(ECi-ECd))/sum(ECi), 0.005)  # 0.5% difference average
+    assert_less((abs(ECi.iloc[-1]-ECd.iloc[-1]))/(ECi.iloc[-1]), 0.00005)  # 0.0005% difference in final value
 
-    expected = float(135554*0.3048) # hour 12
-    error = abs((EC_cummax[12*3600] - expected)/expected)
-    # print(EC_cummax[12*3600], expected, error)
-    assert_less(error, 0.01) # 1% error
 
 if __name__ == '__main__':
     test_mass_consumed()
