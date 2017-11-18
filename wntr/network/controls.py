@@ -245,6 +245,14 @@ class SimpleNodeCondition(ControlCondition):
         self._threshold = self._parse_value(threshold)
         self._backtrack = 0
 
+    def to_dict(self):
+        res = dict()
+        res['_condition_type'] = 'SimpleNodeCondition'
+        res['does-source'] = (self._source_obj.__class__.__name__, self._source_obj.name, self._source_attr)
+        res['have-relation'] = self._relation.text
+        res['to-threshold'] = self._threshold
+        return res
+
     @property
     def name(self):
         if hasattr(self._source_obj, 'name'):
@@ -326,6 +334,17 @@ class TimeOfDayCondition(ControlCondition):
         self._backtrack = 0
         if model is not None and not self._repeat and self._threshold < model._start_clocktime and first_day < 1:
             self._first_day = 1
+
+    def to_dict(self):
+        res = dict()
+        res['_condition_type'] = 'TimeOfDayCondition'
+        res['does-source'] = ('WaterNetworkModel', '$', '_clock_time')
+        res['have-relation'] = self._relation.text
+        res['to-threshold'] = self._threshold
+        res['starting-day'] = self._first_day
+        if self._repeat:
+            res['with-recurrance'] = 'daily'
+        return res
 
     @property
     def name(self):
@@ -433,6 +452,17 @@ class SimTimeCondition(ControlCondition):
         self._backtrack = 0
         self._first_time = first_time
 
+    def to_dict(self):
+        res = dict()
+        res['_condition_type'] = 'SimTimeCondition'
+        res['does-source'] = ('WaterNetworkModel', '$', 'sim_time')
+        res['have-relation'] = self._relation.text
+        res['to-threshold'] = self._threshold
+        res['starting-time'] = self._first_time
+        if self._repeat:
+            res['with-recurrance'] = self._repeat
+        return res
+
     @property
     def name(self):
         if not self._repeat:
@@ -518,6 +548,14 @@ class ValueCondition(ControlCondition):
         self._threshold = ControlCondition._parse_value(threshold)
         self._backtrack = 0
 
+    def to_dict(self):
+        res = dict()
+        res['_condition_type'] = 'ValueCondition'
+        res['condition']['does-source'] = (self._source_obj.__class__.__name__, self._source_obj.name, self._source_attr)
+        res['condition']['have-relation'] = self._relation.text
+        res['condition']['to-threshold'] = self._threshold
+        return res
+
     def requires(self):
         return [self._source_obj]
 
@@ -584,6 +622,14 @@ class RelativeCondition(ControlCondition):
         self._threshold_obj = threshold_obj
         self._threshold_attr = threshold_attr
         self._backtrack = 0
+
+    def to_dict(self):
+        res = dict()
+        res['_condition_type'] = 'RelativeCondition'
+        res['does-source'] = (self._source_obj.__class__.__name__, self._source_obj.name, self._source_attr)
+        res['have-relation'] = self._relation.text
+        res['to-other'] = (self._threshold_obj.__class__.__name__, self._threshold_obj.name, self._threshold_attr)
+        return res
 
     @property
     def name(self):
@@ -653,6 +699,12 @@ class OrCondition(ControlCondition):
         self._condition_1 = cond1
         self._condition_2 = cond2
 
+    def to_dict(self):
+        res = dict()
+        res['_condition_type'] = 'OrCondition'
+        res['either-of'] = (self._condition_1.to_dict(), self._condition_2.to_dict())
+        return res
+
     def __str__(self):
         return "( " + str(self._condition_1) + " || " + str(self._condition_2) + " )"
 
@@ -687,6 +739,12 @@ class AndCondition(ControlCondition):
     def __init__(self, cond1, cond2):
         self._condition_1 = cond1
         self._condition_2 = cond2
+
+    def to_dict(self):
+        res = dict()
+        res['_condition_type'] = 'AndCondition'
+        res['both-of'] = (self._condition_1.to_dict(), self._condition_2.to_dict())
+        return res
 
     def __str__(self):
         return "( "+ str(self._condition_1) + " && " + str(self._condition_2) + " )"
@@ -761,6 +819,12 @@ class ControlAction(BaseControlAction):
 
         #if (isinstance(target_obj, wntr.network.Valve) or (isinstance(target_obj, wntr.network.Pipe) and target_obj.cv)) and attribute=='status':
         #    raise ValueError('You may not add controls to valves or pipes with check valves.')
+
+    def to_dict(self):
+        res = dict()
+        res['set-target'] = (self._target_obj_ref.__class__.__name__, self._target_obj_ref.name, self._attribute)
+        res['to-value'] = self._value
+        return res
 
     def requires(self):
         return [self._target_obj_ref]
@@ -932,6 +996,23 @@ class IfThenElseControl(Control):
         if self._name is None:
             self._name = ''
 
+    def to_dict(self):
+        res = dict()
+        res['_control_type'] = 'IfThenElseControl'        
+        res['condition'] = self._condition.to_dict()
+        res['true-actions'] = list()
+        for action in self._then_actions:
+            res['true-actions'].append(action.to_dict())
+        if self._else_actions:
+            res['false-actions'] = list()
+            for action in self._else_actions:
+                res['false-actions'].append(action.to_dict())
+        if self._priority:
+            res['priority'] = self._priority
+        if self._name:
+            res['name'] = self._name
+        return res
+
     def requires(self):
         req = self._condition.requires()
         for action in self._then_actions:
@@ -1064,8 +1145,6 @@ class TimeControl(Control):
     """
 
     def __init__(self, wnm, run_at_time, time_flag, daily_flag, control_action):
-        self.name = 'blah'
-
         if isinstance(control_action._target_obj_ref,wntr.network.Link) and control_action._attribute=='status' and control_action._value==wntr.network.LinkStatus.opened:
             self._priority = 0
         elif isinstance(control_action._target_obj_ref,wntr.network.Link) and control_action._attribute=='status' and control_action._value==wntr.network.LinkStatus.closed:
@@ -1089,6 +1168,23 @@ class TimeControl(Control):
 
         if time_flag == 'SHIFTED_TIME' and self._run_at_time < wnm._shifted_time:
             self._run_at_time += 24*3600
+        self.name = str(self).replace(' ','')
+        
+    def to_dict(self):
+        res = dict()
+        res['_control_type'] = 'TimeControl'
+        res['condition'] = dict()
+        if self._time_flag == 'SIM_TIME':
+            attr = 'sim_time'
+        else:
+            attr = '_shifted_time'
+        res['condition']['does-source'] = ('WaterNetworkModel', '$', attr)
+        if self._daily_flag:
+            res['condition']['with-recurrance'] = 'daily'
+        res['condition']['have-relation'] = Comparison.eq.text
+        res['condition']['to-threshold'] = self._run_at_time
+        res['true-actions'] = [self._control_action.to_dict()]
+        return res
 
     def requires(self):
         req = self._control_action.requires()
@@ -1189,7 +1285,6 @@ class ConditionalControl(Control):
     """
 
     def __init__(self, source, operation, threshold, control_action):
-        self.name = 'blah'
 
         if isinstance(control_action._target_obj_ref,wntr.network.Link) and control_action._attribute=='status' and control_action._value==wntr.network.LinkStatus.opened:
             self._priority = 0
@@ -1209,6 +1304,17 @@ class ConditionalControl(Control):
             raise ValueError('source must be a tuple, (source_object, source_attribute).')
         if not isinstance(threshold,float):
             raise ValueError('threshold must be a float.')
+        self.name = str(self).replace(' ','')
+
+    def to_dict(self):
+        res = dict()
+        res['_control_type'] = 'ConditionalControl'
+        res['condition'] = dict()
+        res['condition']['does-source'] = (self._source_obj.__class__.__name__, self._source_obj.name, self._source_attr)
+        res['condition']['have-relation'] = Comparison.parse(self._operation).text
+        res['condition']['to-threshold'] = self._threshold
+        res['true-actions'] = [self._control_action.to_dict()]
+        return res
 
     def requires(self):
         req = [self._source_obj] + self._control_action.requires()

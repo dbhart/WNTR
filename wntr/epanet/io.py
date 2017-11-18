@@ -816,7 +816,10 @@ class InpFile(object):
     def _write_curves(self, f, wn):
         f.write('[CURVES]\n'.encode('ascii'))
         f.write(_CURVE_LABEL.format(';ID', 'X-Value', 'Y-Value').encode('ascii'))
-        for curve_name, curve in wn._curves.items():
+        curves = wn._curves.keys()
+        curves.sort()
+        for curve_name in curves:
+            curve = wn.get_curve(curve_name)
             if curve.curve_type == 'VOLUME':
                 f.write(';VOLUME: {}\n'.format(curve_name).encode('ascii'))
                 for point in curve.points:
@@ -878,7 +881,10 @@ class InpFile(object):
         num_columns = 8
         f.write('[PATTERNS]\n'.encode('ascii'))
         f.write('{:10s} {:10s}\n'.format(';ID', 'Multipliers').encode('ascii'))
-        for pattern_name, pattern in wn._patterns.items():
+        patterns = wn._patterns.keys()
+        patterns.sort()
+        for pattern_name in patterns:
+            pattern = wn.get_pattern(pattern_name)
             count = 0
             for i in pattern.multipliers:
                 if count % num_columns == 0:
@@ -1100,7 +1106,10 @@ class InpFile(object):
 
         f.write('[CONTROLS]\n'.encode('ascii'))
         # Time controls and conditional controls only
-        for text, all_control in wn._controls.items():
+        controls = wn._controls.keys()
+        controls.sort()
+        for text in controls:
+            all_control = wn.get_control(text)
             if isinstance(all_control, wntr.network.TimeControl):
                 entry = 'Link {link} {setting} AT {compare} {time:g}\n'
                 vals = {'link': all_control._control_action._target_obj_ref.name,
@@ -1195,7 +1204,10 @@ class InpFile(object):
 
     def _write_rules(self, f, wn):
         f.write('[RULES]\n'.encode('ascii'))
-        for text, all_control in wn._controls.items():
+        controls = wn._controls.keys()
+        controls.sort()
+        for text in controls:
+            all_control = wn.get_control(text)
             entry = '{}\n'
             if isinstance(all_control, wntr.network.controls.IfThenElseControl):
                 rule = _EpanetRule('blah', self.flow_units, self.mass_units)
@@ -1563,7 +1575,7 @@ class InpFile(object):
                 raise RuntimeError('opts.report_timestep must be greater than or equal to opts.hydraulic_timestep.')
             if opts.time.report_timestep % opts.time.hydraulic_timestep != 0:
                 raise RuntimeError('opts.report_timestep must be a multiple of opts.hydraulic_timestep')
-
+            opts.hydraulic.emitter_exponent = to_si(self.flow_units, opts.hydraulic.emitter_exponent, HydParam.EmitterCoeff)
 
     def _write_options(self, f, wn):
         f.write('[OPTIONS]\n'.encode('ascii'))
@@ -1592,7 +1604,7 @@ class InpFile(object):
         if wn.options.hydraulic.pattern is not None:
             f.write(entry_string.format('PATTERN', wn.options.hydraulic.pattern).encode('ascii'))
         f.write(entry_float.format('DEMAND MULTIPLIER', wn.options.hydraulic.demand_multiplier).encode('ascii'))
-        f.write(entry_float.format('EMITTER EXPONENT', wn.options.hydraulic.emitter_exponent).encode('ascii'))
+        f.write(entry_float.format('EMITTER EXPONENT', from_si(self.flow_units, wn.options.hydraulic.emitter_exponent, HydParam.EmitterCoeff)).encode('ascii'))
         f.write(entry_float.format('TOLERANCE', wn.options.solver.tolerance).encode('ascii'))
         if wn.options.graphics.map_filename is not None:
             f.write(entry_string.format('MAP', wn.options.graphics.map_filename).encode('ascii'))
@@ -1780,7 +1792,10 @@ class InpFile(object):
         label = '{:10s} {:10s} {:10s}\n'
         f.write(label.format(';Node', 'X-Coord', 'Y-Coord').encode('ascii'))
         coord = nx.get_node_attributes(wn._graph, 'pos')
-        for key, val in coord.items():
+        keys = coord.keys()
+        keys.sort()
+        for key in keys:
+            val = coord[key]
             f.write(entry.format(key, val[0], val[1]).encode('ascii'))
         f.write('\n'.encode('ascii'))
 

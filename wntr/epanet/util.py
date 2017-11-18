@@ -140,6 +140,31 @@ class FlowUnits(enum.Enum):
         return self.name
 
     @property
+    def _vlt(self):
+        if self is FlowUnits.CFS: return 'L=ft, T=sec, V=ft^3'
+        if self is FlowUnits.GPM: return 'L=ft, T=min, V=US-gal'
+        if self is FlowUnits.MGD: return 'L=ft, T=day, V=million-US-gal'
+        if self is FlowUnits.IMGD: return 'L=ft, T=day, V=million-Imp-gal'
+        if self is FlowUnits.AFD: return 'L=ft, T=day, V=acre-feet'
+        if self is FlowUnits.LPS: return 'L=m, T=sec, V=liter'
+        if self is FlowUnits.LPM: return 'L=m, T=min, V=liter'
+        if self is FlowUnits.MLD: return 'L=m, T=day, V=million-liter'
+        if self is FlowUnits.CMH: return 'L=m, T=hr, V=m^3'
+        if self is FlowUnits.CMD: return 'L=m, T=day, V=m^3'
+        if self is FlowUnits.SI: return 'L=m, T=sec, V=m^3'
+
+    @property
+    def time_factor(self):
+        if self in [FlowUnits.GPM, FlowUnits.LPM, ]: 
+            return 60.0
+        elif self in [FlowUnits.CMH, ]: 
+            return 3600.0
+        elif self in [FlowUnits.MGD, FlowUnits.IMGD, FlowUnits.AFD, 
+                    FlowUnits.MLD, FlowUnits.CMD, ]: 
+            return 86400.0
+        return 1.0
+
+    @property
     def factor(self):
         """float: The conversion factor to convert units into SI units of :math:`m^3\,s^{-1}`.
 
