@@ -140,18 +140,88 @@ class FlowUnits(enum.Enum):
         return self.name
 
     @property
-    def _vlt(self):  # (Length, Time, Volume, Pressure)
-        if self is FlowUnits.CFS: return 'L=ft, T=sec, V=ft^3'
-        if self is FlowUnits.GPM: return 'L=ft, T=min, V=US-gal'
-        if self is FlowUnits.MGD: return 'L=ft, T=day, V=million-US-gal'
-        if self is FlowUnits.IMGD: return 'L=ft, T=day, V=million-Imp-gal'
-        if self is FlowUnits.AFD: return 'L=ft, T=day, V=acre-feet'
-        if self is FlowUnits.LPS: return 'L=m, T=sec, V=liter'
-        if self is FlowUnits.LPM: return 'L=m, T=min, V=liter'
-        if self is FlowUnits.MLD: return 'L=m, T=day, V=million-liter'
-        if self is FlowUnits.CMH: return 'L=m, T=hr, V=m^3'
-        if self is FlowUnits.CMD: return 'L=m, T=day, V=m^3'
-        if self is FlowUnits.SI: return 'L=m, T=sec, V=m^3'
+    def flow_symbol(self): 
+        if self is FlowUnits.CFS: return 'ft^3/s'
+        if self is FlowUnits.GPM: return 'gal/min'
+        if self is FlowUnits.MGD: return 'Mgal/day'
+        if self is FlowUnits.IMGD: return 'Mgal*/day'
+        if self is FlowUnits.AFD: return 'acre-ft/day'
+        if self is FlowUnits.LPS: return 'L/s'
+        if self is FlowUnits.LPM: return 'L/min'
+        if self is FlowUnits.MLD: return 'ML/day'
+        if self is FlowUnits.CMH: return 'm^3/hr'
+        if self is FlowUnits.CMD: return 'm^3/day'
+        if self is FlowUnits.SI: return 'm^3/s'
+
+    @property
+    def flow_volume_symbol(self):
+        if self is FlowUnits.CFS: return 'ft^3'
+        if self is FlowUnits.GPM: return 'gal'
+        if self is FlowUnits.MGD: return 'Mgal'
+        if self is FlowUnits.IMGD: return 'Mgal*'
+        if self is FlowUnits.AFD: return 'acre-ft'
+        if self is FlowUnits.LPS: return 'L'
+        if self is FlowUnits.LPM: return 'L'
+        if self is FlowUnits.MLD: return 'ML'
+        if self is FlowUnits.CMH: return 'm^3'
+        if self is FlowUnits.CMD: return 'm^3'
+        if self is FlowUnits.SI: return 'm^3'
+
+    @property
+    def time_symbol(self):
+        if self is FlowUnits.CFS: return 'sec'
+        if self is FlowUnits.GPM: return 'min'
+        if self is FlowUnits.MGD: return 'day'
+        if self is FlowUnits.IMGD: return 'day'
+        if self is FlowUnits.AFD: return 'day'
+        if self is FlowUnits.LPS: return 'sec'
+        if self is FlowUnits.LPM: return 'min'
+        if self is FlowUnits.MLD: return 'day'
+        if self is FlowUnits.CMH: return 'hr'
+        if self is FlowUnits.CMD: return 'day'
+        if self is FlowUnits.SI: return 'sec'
+
+    @property
+    def power_symbol(self):
+        if self.is_metric: return 'kW'
+        elif self.is_traditional: return 'hp'
+        else: return 'W'
+
+    @property
+    def velocity_symbol(self):
+        if self.is_metric: return 'm/s'
+        elif self.is_traditional: return 'ft/s'
+        else: return 'm/s'
+
+    @property
+    def roughness_symbol(self):
+        if self.is_metric: return 'mm'
+        elif self.is_traditional: return '1/1000 ft'
+        else: return 'm'
+
+    @property
+    def length_symbol(self):
+        if self.is_metric: return 'm'
+        elif self.is_traditional: return 'ft'
+        else: return 'm'
+
+    @property
+    def minor_length_symbol(self):
+        if self.is_metric: return 'mm'
+        elif self.is_traditional: return 'in'
+        else: return 'm'
+
+    @property
+    def volume_symbol(self):
+        if self.is_metric: return 'm^3'
+        elif self.is_traditional: return 'ft^3'
+        else: return 'm^3'
+
+    @property
+    def pressure_symbol(self):
+        if self.is_metric: return 'kPa'
+        elif self.is_traditional: return 'psi'
+        else: return 'Pa'
 
     @property
     def time_factor(self):

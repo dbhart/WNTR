@@ -86,15 +86,22 @@ class NetworkAnalyzer(object):
     @classmethod
     def describe(cls, *args, **kwargs):
         summary_columns = []
+        units = FlowUnits.SI
+        if kwargs is not None and 'units' in kwargs:
+            units = kwargs['units']
         for arg in args:
             if not isinstance(arg, WaterNetworkModel):
                 raise ValueError('arguments must be WaterNetworkModels')
             summary_columns.append(arg.name)
+        _csd = 'Cum. system demand ('+units.flow_volume_symbol+')'
+        _add = 'Ave. daily demand ('+units.flow_volume_symbol+')'
+        _tpl = 'Total pipe len. ('+units.length_symbol+')'
+        _tsd = 'Sim. duration ('+units.time_symbol+')'
         summary_rows = ['Node ct.', 'Junctions', 'Tanks', 'Reservoirs',
                         'Link ct.', 'Pipes', 'Pumps', 'Valves',
                         'Pattern ct.', 'Curve ct.', 'Control ct.', 'Source ct.',
-                        'Sim. duration', 'Pat. step', 'Hyd. step', 'Qual. step',
-                        'Total pipe len.', 'Cum. system demand', 'Ave. daily demand']
+                        _tsd, 'Pat. step (sec)', 'Hyd. step (sec)', 'Qual. step (sec)',
+                        _csd, _add, _tpl]
         summary = pd.DataFrame(index=summary_rows, columns=summary_columns)
         steps = [0, 0, 0]
         def get_values(item):
@@ -106,13 +113,13 @@ class NetworkAnalyzer(object):
         for ct, netA in enumerate(args):
             i = summary_columns[ct]
             tplA = sum(netA.query_link_attribute('length').values())
-            summary.at['Total pipe len.',i] = tplA
+            summary.at[_tpl,i] = from_si(units, tplA, HydParam.Length)
             steps[:] = [0, netA.options.time.duration-netA.options.time.pattern_timestep, netA.options.time.pattern_timestep]
             demandA = pd.DataFrame.from_items(map(get_values, netA._nodes.items()))
             cumA = np.sum(demandA.sum())*netA.options.time.pattern_timestep
-            summary.at['Cum. system demand',i] = cumA
-            dailyA = cumA / netA.options.time.duration * 86400
-            summary.at['Ave. daily demand',i] = dailyA
+            summary.at[_csd,i] = from_si(units, cumA, HydParam.Demand) / units.time_factor
+            dailyA = from_si(units, cumA / netA.options.time.duration * 86400, HydParam.Demand) / units.time_factor
+            summary.at[_add,i] = dailyA
             summary.at['Node ct.',i] = netA.num_nodes
             summary.at['Junctions',i] = netA.num_junctions
             summary.at['Tanks',i] = netA.num_tanks
@@ -125,10 +132,10 @@ class NetworkAnalyzer(object):
             summary.at['Curve ct.',i] = netA.num_curves
             summary.at['Control ct.',i] = netA.num_controls
             summary.at['Source ct.',i] = netA.num_sources
-            summary.at['Sim. duration',i] = netA.options.time.duration
-            summary.at['Pat. step',i] = netA.options.time.pattern_timestep
-            summary.at['Hyd. step',i] = netA.options.time.hydraulic_timestep
-            summary.at['Qual. step',i] = netA.options.time.quality_timestep
+            summary.at[_tsd,i] = netA.options.time.duration / units.time_factor
+            summary.at['Pat. step (sec)',i] = netA.options.time.pattern_timestep
+            summary.at['Hyd. step (sec)',i] = netA.options.time.hydraulic_timestep
+            summary.at['Qual. step (sec)',i] = netA.options.time.quality_timestep
         
         return summary
         
