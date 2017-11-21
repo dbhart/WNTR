@@ -816,7 +816,7 @@ class InpFile(object):
     def _write_curves(self, f, wn):
         f.write('[CURVES]\n'.encode('ascii'))
         f.write(_CURVE_LABEL.format(';ID', 'X-Value', 'Y-Value').encode('ascii'))
-        curves = wn._curves.keys()
+        curves = list(wn._curves.keys())
         curves.sort()
         for curve_name in curves:
             curve = wn.get_curve(curve_name)
@@ -881,7 +881,7 @@ class InpFile(object):
         num_columns = 8
         f.write('[PATTERNS]\n'.encode('ascii'))
         f.write('{:10s} {:10s}\n'.format(';ID', 'Multipliers').encode('ascii'))
-        patterns = wn._patterns.keys()
+        patterns = list(wn._patterns.keys())
         patterns.sort()
         for pattern_name in patterns:
             pattern = wn.get_pattern(pattern_name)
@@ -1106,7 +1106,7 @@ class InpFile(object):
 
         f.write('[CONTROLS]\n'.encode('ascii'))
         # Time controls and conditional controls only
-        controls = wn._controls.keys()
+        controls = list(wn._controls.keys())
         controls.sort()
         for text in controls:
             all_control = wn.get_control(text)
@@ -1204,7 +1204,7 @@ class InpFile(object):
 
     def _write_rules(self, f, wn):
         f.write('[RULES]\n'.encode('ascii'))
-        controls = wn._controls.keys()
+        controls = list(wn._controls.keys())
         controls.sort()
         for text in controls:
             all_control = wn.get_control(text)
@@ -1792,7 +1792,7 @@ class InpFile(object):
         label = '{:10s} {:10s} {:10s}\n'
         f.write(label.format(';Node', 'X-Coord', 'Y-Coord').encode('ascii'))
         coord = nx.get_node_attributes(wn._graph, 'pos')
-        keys = coord.keys()
+        keys = list(coord.keys())
         keys.sort()
         for key in keys:
             val = coord[key]
