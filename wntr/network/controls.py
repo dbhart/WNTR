@@ -92,6 +92,8 @@ class Comparison(enum.Enum):
 
     @classmethod
     def parse(cls, func):
+        if isinstance(func, cls):
+            return func.func
         if isinstance(func, six.string_types):
             func = func.lower().strip()
         if func in [np.equal, '=', 'eq', '-eq', '==', 'is', 'equal', 'equal to']:

@@ -140,7 +140,7 @@ class FlowUnits(enum.Enum):
         return self.name
 
     @property
-    def _vlt(self):
+    def _vlt(self):  # (Length, Time, Volume, Pressure)
         if self is FlowUnits.CFS: return 'L=ft, T=sec, V=ft^3'
         if self is FlowUnits.GPM: return 'L=ft, T=min, V=US-gal'
         if self is FlowUnits.MGD: return 'L=ft, T=day, V=million-US-gal'

@@ -17,7 +17,6 @@ from .options import WaterNetworkOptions
 from .elements import Curve, Pattern, Source
 from .elements import LinkStatus
 from .elements import Demands, TimeSeries
-from wntr.epanet.util import FlowUnits, from_si
 import wntr.epanet
 
 logger = logging.getLogger(__name__)
@@ -2485,8 +2484,9 @@ class Tank(Node):
                    min_level=self.min_level,
                    max_level=self.max_level,
                    diameter=self.diameter,
-                   min_vol=self.min_vol,
-                   vol_curve_name=self.vol_curve_name)
+                   min_vol=self.min_vol)
+        if self.vol_curve:
+            res['vol_curve'] = self.vol_curve.to_dict()
         return res
 
     @property
@@ -2834,7 +2834,7 @@ class Pump(Link):
                    speed=self.speed_timeseries.to_dict(),
                    status=self.status)
         if self.info_type == 'HEAD':
-            res['head-curve'] = self.curve.name
+            res['head-curve'] = self.curve.to_dict()
         elif self.info_type == 'POWER':
             res['power'] = self.power
         return res
@@ -3024,60 +3024,3 @@ class Valve(Link):
         return id(self)
 
 
-class NetworkAnalyzer(object):
-    """Perform network analysis tasks.
-    
-    Provides methods to get statistics about a WaterNetworkModel.
-    Also provides the ability to compare the structure of two networks
-    with different restrictions.
-    
-    
-    """
-    @classmethod        
-    def summarize(self, model, units=FlowUnits.SI):
-        """Return a dictionary of some summary statistics.
-        
-        * counts
-        * * number of nodes
-        * * number of junctions
-        * * number of tanks
-        * * number of reservoirs
-        * * number of links
-        * * number of pipes
-        * * number of pumps
-        * * number of valves
-        * * number of patterns
-        * * number of curves
-        * * number of sources
-        * * number of controls
-        * totals
-        * * total duration
-        * * total pipe length
-        * * total system consumption
-        
-        """
-        summary = dict(counts=dict(), stats=dict())
-        summary['counts']['junctions'] = model.num_junctions
-        summary['counts']['tanks'] = model.num_tanks
-        summary['counts']['reservoirs'] = model.num_reservoirs
-        summary['counts']['pipes'] = model.num_pipes
-        summary['counts']['pumps'] = model.num_pumps
-        summary['counts']['valves'] = model.num_valves
-        summary['counts']['patterns'] = model.num_patterns
-        summary['counts']['curves'] = model.num_curves
-        summary['counts']['sources'] = model.num_sources
-        summary['counts']['controls'] = model.num_controls
-        total_pipe_len = sum(model.query_link_attribute('length').values())
-        summary['stats']['reporting-units'] = units._vlt
-        summary['stats']['total-pipe-length'] = from_si(units, total_pipe_len, wntr.epanet.HydParam.length)
-        def map_time(time):
-            def map_at(dlist):
-                v = dlist.at(time)
-                return v if v > 0 else 0
-            return sum(map(map_at, model.query_node_attribute('demand_timeseries_list', node_type=Junction).values()))
-        pattern_steps = np.arange(0, model.options.time.duration, model.options.time.pattern_timestep)
-        demand = sum(map(map_time, pattern_steps))*model.options.time.pattern_timestep
-        summary['stats']['total-consumption'] = from_si(units, demand, wntr.epanet.HydParam.demand) / units.time_factor
-        summary['stats']['average-demand'] = from_si(units, demand / model.options.time.duration, wntr.epanet.HydParam.demand)
-        summary['stats']['total-duration'] = model.options.time.duration / units.time_factor
-        return summary
