@@ -44,7 +44,7 @@ def test_mass_consumed():
     wn = wntr.network.WaterNetworkModel(inp_file)
 
     wn.options.quality.mode = 'CHEMICAL'
-    wn.options.hydraulic.units = 'LPS'
+    wn.options.hydraulic.en2_units = 'LPS'
     newpat = wntr.network.elements.Pattern.BinaryPattern('NewPattern', 0, 24*3600, wn.options.time.pattern_timestep, wn.options.time.duration)
     wn.add_pattern(newpat.name, newpat)
     
@@ -87,7 +87,7 @@ def test_volume_consumed():
     wn.options.time.quality_timestep = 300
     wn.options.time.hydraulic_timestep = 900
     wn.options.time.report_timestep = 900
-    wn.options.hydraulic.units = 'CFS'
+    wn.options.hydraulic.en2_units = 'CFS'
     newpat = wntr.network.elements.Pattern.BinaryPattern('NewPattern', 0, 24*3600, wn.options.time.pattern_timestep, wn.options.time.duration)
     wn.add_pattern(newpat.name, newpat)
     wn.add_source('Source1', '121', 'SETPOINT', 100, 'NewPattern')
