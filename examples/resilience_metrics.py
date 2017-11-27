@@ -289,8 +289,8 @@ def water_security_metrics(wn):
     sim = wntr.sim.EpanetSimulator(wn)
     results_CHEM = sim.run_sim()
 
-    MC = wntr.metrics.mass_contaminant_consumed(results_CHEM.node)
-    VC = wntr.metrics.volume_contaminant_consumed(results_CHEM.node, 0.001)
+    MC = wntr.metrics.mass_contaminant_consumed(results_CHEM.node['quality'], results_CHEM.node['demand'])
+    VC = wntr.metrics.volume_contaminant_consumed(results_CHEM.node['quality'], results_CHEM.node['demand'], 0.001)
     EC = wntr.metrics.extent_contaminant(results_CHEM.node, results_CHEM.link, wn, 0.001)
 
     wntr.graphics.plot_network(wn, node_attribute=MC.sum(axis=0), node_range = [0,400], node_size=40,

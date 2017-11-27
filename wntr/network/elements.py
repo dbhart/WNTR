@@ -72,6 +72,13 @@ class Curve(object):
         """Returns the number of points in the curve."""
         return len(self.points)
 
+    def to_dict(self):
+        res = dict()
+        res['name'] = self.name
+        res['curve_type'] = self.curve_type
+        res['points'] = self.points
+        return res
+
 class Pattern(object):
     """
     Pattern class.
@@ -106,6 +113,14 @@ class Pattern(object):
                 raise ValueError('Pattern->time_options must be a TimeOptions class or null')
         self._time_options = time_options
         self.wrap = wrap
+        
+    def to_dict(self):
+        res = dict()
+        res['name'] = self.name
+        res['multipliers'] = self._multipliers.tolist()
+        res['time_options'] = (self._time_options.pattern_start, self._time_options.pattern_timestep)
+        res['wrap'] = self.wrap
+        return res
 
     @classmethod
     def BinaryPattern(cls, name, start_time, end_time, step_size, duration, wrap=False):
@@ -255,6 +270,15 @@ class TimeSeries(object):
         self._base = base
         self._category = category
         
+    def to_dict(self):
+        res = dict()
+        res['base'] = self._base
+        if self._pattern:
+            res['pattern'] = self._pattern.name
+        if self._category:
+            res['category'] = self._category
+        return res
+        
     def __nonzero__(self):
         return self._base
     __bool__ = __nonzero__
@@ -389,6 +413,16 @@ class Source(object):
     def __repr__(self):
         fmt = "<Source: '{}', '{}', '{}', {}, {}>"
         return fmt.format(self.name, self.node_name, self.source_type, self._base, self._pattern_name)
+
+    def to_dict(self):
+        res = dict()
+        res['name'] = self.name
+        res['node_name'] = self.node_name
+        res['source_type'] = self.source_type
+        res['strength'] = self.strength_timeseries.base_value
+        if self.strength_timeseries.pattern:
+            res['pattern'] = self.strength_timeseries.pattern_name
+        return res
 
 
 class Demands(MutableSequence):
@@ -534,6 +568,12 @@ class Demands(MutableSequence):
             for ct, t in enumerate(demand_times):
                 demand_values[ct] += dem(t)
         return demand_values
+
+    def to_dict(self):
+        res = list()
+        for d in self._list:
+            res.append(d.to_dict())
+        return res
 
 
 class NodeType(enum.IntEnum):

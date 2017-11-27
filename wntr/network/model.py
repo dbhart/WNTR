@@ -111,6 +111,39 @@ class WaterNetworkModel(object):
             return True
         return False
 
+    def to_dict(self):
+        res = dict({'options': dict(),
+                    'nodes': dict(),
+                    'links': dict(),
+                    'sources': dict(),
+                    'patterns': dict(),
+                    'curves': dict(),
+                    'controls': dict(),
+                    })
+        res['options'] = self.options.to_dict()
+        for name, node in self._nodes.items():
+            res['nodes'][name] = node.to_dict()
+            if node.initial_quality:
+                res['nodes'][name]['initial_quality'] = node.initial_quality
+            try:
+                coords = self.get_node_coordinates(name)
+                res['nodes'][name]['coordinates'] = coords
+            except: pass
+        for name, link in self._links.items():
+            res['links'][name] = link.to_dict()
+            if link._vertices:
+                res['links'][name]['vertices'] = link._vertices
+        for name, source in self._sources.items():
+            res['sources'][name] = source.to_dict()
+        for name, pattern in self._patterns.items():
+            res['patterns'][name] = pattern.to_dict()
+        for name, curve in self._curves.items():
+            res['curves'][name] = curve.to_dict()
+        for name, control in self._controls.items():
+            if isinstance(control, (IfThenElseControl, TimeControl, ConditionalControl)):
+                res['controls'][name] = control.to_dict()
+        return res
+
     def __hash__(self):
         return id(self)
             
@@ -2024,6 +2057,11 @@ class Node(object):
         self._initial_quality = None
         self.tag = None
 
+    def to_dict(self):
+        res = dict(_node_type='Node',
+                   name=self._name)
+        return res
+
     def __eq__(self, other):
         if not type(self) == type(other):
             return False
@@ -2090,6 +2128,13 @@ class Link(object):
         self.flow = None
         self.tag = None
         self._vertices = []
+
+    def to_dict(self):
+        res = dict(_link_type='Link',
+                   name=self._link_name,
+                   start_node=self._start_node_name,
+                   end_node=self._end_node_name)
+        return res
 
     def __eq__(self, other):
         if not type(self) == type(other):
@@ -2194,6 +2239,13 @@ class Junction(Node):
         self._leak_end_control_name = 'junction'+self._name+'end_leak_control'
         self._emitter_coefficient = None
 
+    def to_dict(self):
+        res = dict(_node_type='Junction',
+                   name=self.name, 
+                   demand=self.demand_timeseries_list.to_dict(),
+                   elevation=self.elevation)
+        return res
+        
     def __repr__(self):
         return "<Junction '{}'>".format(self._name)
 
@@ -2424,6 +2476,19 @@ class Tank(Node):
         self._leak_end_control_name = 'tank'+self._name+'end_leak_control'
         self.bulk_rxn_coeff = None
 
+    def to_dict(self):
+        res = dict(_node_type='Tank',
+                   name=self.name,
+                   elevation=self.elevation,
+                   init_level=self.init_level,
+                   min_level=self.min_level,
+                   max_level=self.max_level,
+                   diameter=self.diameter,
+                   min_vol=self.min_vol)
+        if self.vol_curve:
+            res['vol_curve'] = self.vol_curve.to_dict()
+        return res
+
     @property
     def level(self):
         """Returns tank level (head - elevation)"""
@@ -2607,6 +2672,12 @@ class Reservoir(Node):
         self.head = base_head
         self.head_timeseries = TimeSeries(base_head, head_pattern, name)
 
+    def to_dict(self):
+        res = dict(_node_type='Reservoir',
+                   name=self.name,
+                   head=self.head_timeseries.to_dict())
+        return res
+
     def __eq__(self, other):
         if not type(self) == type(other):
             return False
@@ -2669,6 +2740,23 @@ class Pipe(Link):
             self._base_status = self.status
         self.bulk_rxn_coeff = None
         self.wall_rxn_coeff = None
+
+    def to_dict(self):
+        res = dict(_link_type='Pipe',
+                   name=self.name,
+                   start_node=self._start_node_name,
+                   end_node=self._end_node_name,
+                   length=self.length,
+                   diameter=self.diameter,
+                   roughness=self.roughness,
+                   minor_loss=self.minor_loss,
+                   status=self.status,
+                   check_valve=self.cv)
+        if self.bulk_rxn_coeff:
+            res['bulk_rxn_coeff'] = self.bulk_rxn_coeff
+        if self.wall_rxn_coeff:
+            res['wall_rxn_coeff'] = self.wall_rxn_coeff
+        return res
 
     def __eq__(self, other):
         if not type(self) == type(other):
@@ -2737,6 +2825,19 @@ class Pump(Link):
             self._base_power = info_value
         else:
             raise RuntimeError('Pump info type not recognized. Options are HEAD or POWER.')
+
+    def to_dict(self):
+        res = dict(_link_type='Pump',
+                   name=self.name,
+                   start_node=self._start_node_name,
+                   end_node=self._end_node_name,
+                   speed=self.speed_timeseries.to_dict(),
+                   status=self.status)
+        if self.info_type == 'HEAD':
+            res['head-curve'] = self.curve.to_dict()
+        elif self.info_type == 'POWER':
+            res['power'] = self.power
+        return res
 
     @property
     def curve_name(self):
@@ -2892,6 +2993,19 @@ class Valve(Link):
         self.status = LinkStatus.active
         self._status = LinkStatus.active
 
+    def to_dict(self):
+        res = dict(_link_type='Valve',
+                   name=self.name,
+                   start_node=self._start_node_name,
+                   end_node=self._end_node_name,
+                   diameter=self.diameter,
+                   minor_loss=self.minor_loss,
+                   status=self.status,
+                   setting=self.setting,
+                   valve_type=self.valve_type)
+        return res
+
+
     def __eq__(self, other):
         if not type(self) == type(other):
             return False
@@ -2908,4 +3022,5 @@ class Valve(Link):
 
     def __hash__(self):
         return id(self)
+
 

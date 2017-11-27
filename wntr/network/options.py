@@ -53,6 +53,17 @@ class WaterNetworkOptions(object):
     
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def to_dict(self):
+        """Return a dict representation of the options"""
+        return {'time': self._time.to_dict(),
+                'hydraulic': self._hydraulic.to_dict(),
+                'results': self._results.to_dict(),
+                'quality': self._quality.to_dict(),
+                'energy': self._energy.to_dict(),
+                'solver': self._solver.to_dict(),
+                'graphics': self._graphics.to_dict(),
+                'user': self._user.to_dict()}
     
     @property
     def time(self):
@@ -217,6 +228,9 @@ class TimeOptions(object):
     def __ne__(self, other):
         return not self == other
 
+    # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
+
 
 class GraphicsOptions(object):
     """
@@ -261,6 +275,10 @@ class GraphicsOptions(object):
         if self.map_filename is not None:
             text += "MAP {}\n".format(self.map_filename)
         return text
+
+    # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
+
 
 class HydraulicOptions(object): 
     """
@@ -322,6 +340,8 @@ class HydraulicOptions(object):
     def __ne__(self, other):
         return not self == other
 
+    # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
 
 
 class ResultsOptions(object):
@@ -424,7 +444,9 @@ class ResultsOptions(object):
     def __ne__(self, other):
         return not self == other
 
-        
+     # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
+       
         
 class QualityOptions(object):
     """
@@ -499,6 +521,9 @@ class QualityOptions(object):
     def __ne__(self, other):
         return not self == other
 
+    # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
+
 
 class EnergyOptions(object):
     """
@@ -535,6 +560,9 @@ class EnergyOptions(object):
 
     def __ne__(self, other):
         return not self == other
+
+    # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
 
 
 class SolverOptions(object):
@@ -589,6 +617,9 @@ class SolverOptions(object):
     def __ne__(self, other):
         return not self == other
 
+    # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
+
 
 class UserOptions(object):
     """
@@ -603,3 +634,6 @@ class UserOptions(object):
     """
     def __init__(self):
         pass
+
+    # Return a dict representation of the options
+    def to_dict(self): return self.__dict__
