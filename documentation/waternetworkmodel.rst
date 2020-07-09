@@ -22,6 +22,7 @@ Build a model from an INP file
 ---------------------------------
 
 A water network model can be created directly from an EPANET INP file.  
+[DAVE add a sentence about using 2.2 vs 2.0 files]  
 The following example builds a water network model.
 
 .. doctest::
@@ -119,7 +120,7 @@ Modify element attributes
 To modify element attributes, the element object is first obtained using the
 :class:`~wntr.network.model.get_node` or 
 :class:`~wntr.network.model.get_link` methods.
-The following example changes junction elevation, pipe diameter, and tank size.
+The following example changes junction elevation, pipe diameter, and size for a constant diameter tank.
 
 .. doctest::
 
@@ -244,8 +245,9 @@ Write a model to an INP file
 
 The water network model can be written to a file in EPANET INP format.
 By default, files are written in the LPS EPANET unit convention.
-The EPANET INP file will not include features not supported by EPANET (i.e., pressure dependent demand simulation options, custom element attributes).
-
+The EPANET INP file will not include features not supported by EPANET (i.e., custom element attributes).
+[DAVE add a sentence about saving 2.2 vs 2.0 options to file. Make sure you can read these into the GUI]
+  
 .. doctest::
 
     >>> wn.write_inpfile('filename.inp')
@@ -255,7 +257,7 @@ Build a model from scratch
 
 A water network model can also be created from scratch by adding elements to an empty model.  Elements 
 must be added before used.  For example, demand patterns are added to the model before they are 
-used within a junction.  The section below include additional information on adding elements to a 
+used within a junction. The section below includes additional information on adding elements to a 
 water network model.
  
 .. doctest::
