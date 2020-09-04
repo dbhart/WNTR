@@ -23,6 +23,7 @@ simulation.
     ControlAction
     ControlBase
     Control
+    Rule
     ControlManager
 	
 """
