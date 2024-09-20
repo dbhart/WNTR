@@ -2333,6 +2333,7 @@ class LinkRegistry(Registry):
             False if the pipe does not have a check valve.
         
         """
+        if check_valve is None: check_valve = False
         assert (
             isinstance(name, str) and len(name) < 32 and name.find(" ") == -1
         ), "name must be a string with less than 32 characters and contain no spaces"
