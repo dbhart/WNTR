@@ -2333,7 +2333,6 @@ class LinkRegistry(Registry):
             False if the pipe does not have a check valve.
         
         """
-        if check_valve is None: check_valve = False
         assert (
             isinstance(name, str) and len(name) < 32 and name.find(" ") == -1
         ), "name must be a string with less than 32 characters and contain no spaces"
@@ -2348,7 +2347,7 @@ class LinkRegistry(Registry):
         assert isinstance(roughness, (int, float)), "roughness must be a float"
         assert isinstance(minor_loss, (int, float)), "minor_loss must be a float"
         assert isinstance(initial_status, (int, str, LinkStatus)), "initial_status must be an int, string or LinkStatus"
-        assert isinstance(check_valve, (str, int, bool)), "check_valve must be a Boolean"
+        # assert isinstance(check_valve, (str, int, bool)), "check_valve must be a Boolean"
         check_valve = bool(int(check_valve))
         
         length = float(length)
