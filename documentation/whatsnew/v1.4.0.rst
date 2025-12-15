@@ -1,4 +1,4 @@
-Version 1.4.0 (main)
+Version 1.4.0 (November 21, 2025)
 ---------------------------------------------------
 WNTR version 1.4.0 includes the following updates:
 
@@ -29,3 +29,7 @@ WNTR version 1.4.0 includes the following updates:
 * Added check value for pump power and tests by @angusmcb in https://github.com/USEPA/WNTR/pull/520
 * Updated plot_network to use geopandas (networkx is still used by default) by @kbonney in https://github.com/USEPA/WNTR/pull/451
 * Restored demo test files by @kaklise in https://github.com/USEPA/WNTR/pull/535
+* Added MPLBACKEND env variable for windows tests by @kaklise in https://github.com/USEPA/WNTR/pull/536
+* Added WNTR factsheets by @kaklise in https://github.com/USEPA/WNTR/pull/485
+* Resolved metadata to push release to PyPI by @kbonney in https://github.com/USEPA/WNTR/pull/543
+* Resolved deprecation warning for pkg_resources by @dbhart in https://github.com/USEPA/WNTR/pull/544
